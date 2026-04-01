@@ -1,49 +1,52 @@
-# **Blueprint: Time Defender**
+# **설계도: 타임 디펜더 (Time Defender)**
 
-## **1. Project Overview**
-"Time Defender" is a productivity-based strategy game that visualizes daily time management as a battlefield defense. Users transform their to-do lists into tactical challenges.
+## **1. 프로젝트 개요**
+"타임 디펜더"는 생산성 기반의 전략 게임으로, 사용자의 여유 시간을 아군 유닛으로, 할 일(To-do)을 적 유닛으로 시각화하여 방어하는 게임입니다.
 
-## **2. Design & Aesthetics**
-- **Vibe:** Cyber-Tactical / Military Dashboard.
-- **Color Palette:** 
-  - Background: `#0a0a0c` (Deep Dark)
-  - Primary (Allies): `#00f2ff` (Neon Cyan)
-  - Secondary (Enemies): `#ff00d4` (Neon Magenta)
-- **Visual Effects:** 
-  - CSS Glow filters for neon elements.
-  - SVG Noise texture for a premium background feel.
-  - Framer Motion animations for unit deployment.
-- **Typography:** Inter (Sans-serif) with high-contrast mono fonts for status logs.
+## **2. 디자인 및 미학**
+- **분위기:** 사이버-택티컬 / 군사 대시보드.
+- **색상 팔레트:** 
+  - 배경: `#0a0a0c` (심해의 어둠)
+  - 기본 (아군): `#00f2ff` (네온 시안)
+  - 보조 (적군): `#ff00d4` (네온 마젠타)
+- **시각 효과:** 
+  - 네온 요소를 위한 CSS 글로우 필터.
+  - 프리미엄 배경 질감을 위한 SVG 노이즈 텍스처.
+  - 유닛 배치를 위한 Framer Motion 애니메이션.
+- **타이포그래피:** Inter (산세리프) 및 상태 로그를 위한 고대비 모노 폰트.
 
-## **3. Implementation Details**
+## **3. 구현 상세**
 
-### **3.1 Tech Stack**
-- **Frontend:** React 19 + TypeScript + Vite.
-- **Styling:** Tailwind CSS (Custom tactical theme).
-- **Icons:** Lucide React.
-- **Animation:** Framer Motion.
-- **Backend:** Supabase (Auth & Database ready).
+### **3.1 기술 스택**
+- **프론트엔드:** React 19 + TypeScript + Vite.
+- **스타일링:** Tailwind CSS (커스텀 택티컬 테마).
+- **아이콘:** Lucide React.
+- **애니메이션:** Framer Motion.
+- **백엔드:** Supabase (인증 및 데이터베이스).
 
-### **3.2 Core Components**
-- **`App.tsx`**: Main controller handling state (tasks, user) and layout.
-- **`CalendarArea.tsx`**: To-do input system with real-time "Reserve Capacity" calculation.
-- **`Battlefield.tsx`**: Visual game board using `AnimatePresence` to show unit counts.
-- **`supabaseClient.ts`**: Integration point for Google OAuth.
+### **3.2 핵심 컴포넌트**
+- **`App.tsx`**: 상태 관리(할 일, 유닛, 경험치, 게임 상태) 및 전체 레이아웃.
+- **`CalendarArea.tsx`**: 할 일 입력 시스템 및 여유 시간 계산.
+- **`Battlefield.tsx`**: 게임 보드. 아군 선택 및 전투 진입 로직 포함.
+- **`BattleScreen.tsx`**: (신규) 실제 전투가 벌어지는 화면.
 
-### **3.3 Calculation Logic**
-- **Allied Soldiers:** `Math.floor(FreeMinutes / 15)`.
-- **Enemy Units:** `tasks.length`.
-- **Total Capacity:** Default 8 hours (480 minutes) per day.
+### **3.3 게임 규칙**
+- **아군 생성:** 여유 시간 15분당 1명의 아군 생성.
+- **적군 생성:** 등록된 할 일 개수만큼 적군 생성.
+- **시간 소멸:** 게임 내 시간 15분 경과 시 아군 1명 소멸.
+- **전투 진입:** 아군 복수 선택 후 적군 클릭 시 전투 시작.
+- **경험치(XP):** 전투 승리 시 생존 아군 수와 조기 종료 시간에 비례하여 획득.
 
-## **4. Current Status**
-- [x] Initial setup and dependency installation.
-- [x] Tactical UI theme and global CSS.
-- [x] Supabase Auth boilerplate (Google Login).
-- [x] Task-to-Unit conversion logic.
-- [x] Responsive split-screen dashboard.
+## **4. 현재 상태**
+- [x] 초기 설정 및 종속성 설치.
+- [x] 택티컬 UI 테마 및 전역 CSS 적용.
+- [x] Supabase 인증 및 Google 로그인.
+- [x] 여유 시간 기반 유닛 계산 로직.
+- [x] **[진행 중]** 전체 한글화 작업.
+- [x] **[진행 중]** 아군 선택 및 전투 전환 로직 구현.
 
-## **5. Next Steps**
-- [ ] Persist tasks to Supabase database.
-- [ ] Add "Clear Mission" button to remove all tasks.
-- [ ] Implement actual combat animations (units moving/attacking).
-- [ ] Add Sound Effects for a more immersive game feel.
+## **5. 다음 단계**
+- [ ] 15분 주기 아군 소멸 타이머 구현.
+- [ ] 전투 화면(`BattleScreen`) 구현 및 애니메이션 추가.
+- [ ] 경험치(XP) 시스템 및 레벨업 UI 추가.
+- [ ] 효과음 및 배경음악 추가.
