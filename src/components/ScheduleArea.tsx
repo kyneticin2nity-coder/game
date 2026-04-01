@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Clock, Calendar as CalendarIcon, Briefcase, Smile, Coffee } from 'lucide-react';
-import { ScheduleType, Schedule } from '../App';
+import type { ScheduleType, Schedule } from '../App';
 
 interface ScheduleAreaProps {
   schedules: Schedule[];
