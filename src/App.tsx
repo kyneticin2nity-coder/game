@@ -1,176 +1,202 @@
 import { useState, useEffect } from 'react';
 import { supabase, signInWithGoogle, signOut } from './lib/supabaseClient';
-import { CalendarArea } from './components/CalendarArea';
+import { ScheduleArea } from './components/ScheduleArea';
 import { Battlefield } from './components/Battlefield';
-import { LogOut, User as UserIcon, LayoutDashboard, Zap } from 'lucide-react';
+import { LogOut, User as UserIcon, Calendar, Zap, CheckCircle } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
-interface Task {
+export type ScheduleType = 'free' | 'work' | 'normal';
+
+export interface Schedule {
   id: string;
   title: string;
-  durationMinutes: number;
+  startTime: string; // HH:mm
+  endTime: string;   // HH:mm
+  type: ScheduleType;
 }
 
-type GameState = '대기' | '전투중' | '정비';
+type GameState = '대기' | '전투중';
 
 function App() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [xp, setXp] = useState(0);
   const [gameState, setGameState] = useState<GameState>('대기');
-  const [gameTime, setGameTime] = useState(0); // 초 단위 (1초 = 게임 내 1분으로 가정)
-  
-  const TOTAL_AVAILABLE_MINUTES = 480; // 8시간 기준
+  const [battleTime, setBattleTime] = useState(0);
+  const [selectedSoldierCount, setSelectedSoldierCount] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
-  // 게임 시간 타이머 (1초마다 게임 내 1분 경과)
+  // 전투 중 타이머
   useEffect(() => {
-    const timer = setInterval(() => {
-      setGameTime(prev => prev + 1);
-    }, 1000);
+    let timer: number;
+    if (gameState === '전투중') {
+      timer = window.setInterval(() => {
+        setBattleTime(prev => prev + 1);
+      }, 1000);
+    } else {
+      setBattleTime(0);
+    }
     return () => clearInterval(timer);
-  }, []);
+  }, [gameState]);
 
-  const handleAddTask = (title: string, duration: number) => {
-    const newTask: Task = {
+  const handleAddSchedule = (title: string, startTime: string, endTime: string, type: ScheduleType) => {
+    const newSchedule: Schedule = {
       id: Math.random().toString(36).substr(2, 9),
       title,
-      durationMinutes: duration,
+      startTime,
+      endTime,
+      type,
     };
-    setTasks([...tasks, newTask]);
+    setSchedules([...schedules, newSchedule].sort((a, b) => a.startTime.localeCompare(b.startTime)));
   };
 
-  const handleRemoveTask = (id: string) => {
-    setTasks(tasks.filter(t => t.id !== id));
+  const handleRemoveSchedule = (id: string) => {
+    setSchedules(schedules.filter(s => s.id !== id));
   };
 
-  const busyMinutes = tasks.reduce((acc, t) => acc + t.durationMinutes, 0);
-  const initialFreeMinutes = Math.max(0, TOTAL_AVAILABLE_MINUTES - busyMinutes);
-  
-  // 핵심 게임 로직: 여유 시간 15분당 아군 1명 생성
-  // 하지만 시간이 지날수록 (gameTime) 아군이 1명씩 소멸 (15분 경과마다)
-  const passedUnits = Math.floor(gameTime / 15);
-  const initialSoldiers = Math.floor(initialFreeMinutes / 15);
-  const currentSoldierCount = Math.max(0, initialSoldiers - passedUnits);
-  
-  const enemyCount = tasks.length;
+  // 시간 차이(분) 계산 함수
+  const getMinutesBetween = (start: string, end: string) => {
+    const [h1, m1] = start.split(':').map(Number);
+    const [h2, m2] = end.split(':').map(Number);
+    return (h2 * 60 + m2) - (h1 * 60 + m1);
+  };
 
-  const handleStartBattle = (selectedSoldierIds: number[]) => {
-    if (selectedSoldierIds.length > 0 && enemyCount > 0) {
+  // 아군 유닛: free 일정의 총 시간 / 15
+  const freeMinutes = schedules
+    .filter(s => s.type === 'free')
+    .reduce((acc, s) => acc + getMinutesBetween(s.startTime, s.endTime), 0);
+  const soldierCount = Math.floor(freeMinutes / 15);
+
+  // 적군 유닛: work 일정의 개수
+  const enemyCount = schedules.filter(s => s.type === 'work').length;
+
+  const handleStartBattle = (selectedIds: number[]) => {
+    if (selectedIds.length > 0 && enemyCount > 0) {
+      setSelectedSoldierCount(selectedIds.length);
       setGameState('전투중');
-      // 전투 로직은 추후 확장
-      setTimeout(() => {
-        // 전투 종료 후 경험치 보상 (생존 아군 수 * 10 XP)
-        const reward = selectedSoldierIds.length * 10;
-        setXp(prev => prev + reward);
-        setGameState('대기');
-        // 전투 승리 시 첫 번째 적 제거 (예시)
-        if (tasks.length > 0) {
-          handleRemoveTask(tasks[0].id);
-        }
-      }, 2000);
+    }
+  };
+
+  const handleCompleteBattle = () => {
+    // 경험치 보상: 생존 아군 * 50 + 전투 시간 보너스
+    const reward = selectedSoldierCount * 50;
+    setXp(prev => prev + reward);
+    setGameState('대기');
+    // 첫 번째 'work' 일정 완료 처리 (제거)
+    const workSchedules = schedules.filter(s => s.type === 'work');
+    if (workSchedules.length > 0) {
+      handleRemoveSchedule(workSchedules[0].id);
     }
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-background text-tactical-text overflow-hidden">
-      {/* 택티컬 헤더 */}
-      <header className="h-16 border-b border-tactical-border px-8 flex items-center justify-between bg-tactical-bg/50 backdrop-blur-md relative z-50">
+    <div className="flex flex-col h-screen w-screen bg-[#f8fafc] text-slate-900 overflow-hidden">
+      {/* 헤더 */}
+      <header className="h-16 border-b border-slate-200 px-8 flex items-center justify-between bg-white/80 backdrop-blur-md relative z-50">
         <div className="flex items-center gap-4">
-          <div className="p-2 bg-primary/10 border border-primary/30 rounded shadow-glow-primary">
-            <LayoutDashboard size={20} className="text-primary" />
+          <div className="p-2 bg-blue-50 border border-blue-100 rounded-lg shadow-sm">
+            <Calendar size={20} className="text-blue-600" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-xl font-black italic tracking-tighter text-glow-primary uppercase leading-tight">타임 디펜더 v1.1</h1>
+            <h1 className="text-xl font-black italic tracking-tighter text-blue-600 uppercase leading-tight">Time Defender White</h1>
             <div className="flex items-center gap-2">
-              <div className="h-1 w-24 bg-tactical-border rounded-full overflow-hidden">
+              <div className="h-1.5 w-32 bg-slate-100 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-primary shadow-glow-primary transition-all duration-500" 
-                  style={{ width: `${(xp % 100)}%` }}
+                  className="h-full bg-blue-500 shadow-sm transition-all duration-500" 
+                  style={{ width: `${(xp % 1000) / 10}%` }}
                 />
               </div>
-              <span className="text-[9px] font-mono text-primary font-bold">LV.{Math.floor(xp/100) + 1} XP:{xp}</span>
+              <span className="text-[10px] font-bold text-slate-400">LV.{Math.floor(xp/1000) + 1} XP:{xp}</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-8">
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-bold text-tactical-text/40 uppercase tracking-widest">작전 시간</span>
-            <span className="text-xl font-black font-mono text-primary">
-              {Math.floor(gameTime / 60).toString().padStart(2, '0')}:
-              {(gameTime % 60).toString().padStart(2, '0')}
-            </span>
-          </div>
-          
+        <div className="flex items-center gap-6">
           {user ? (
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-1 bg-tactical-bg border border-tactical-border rounded-full">
-                <UserIcon size={14} className="text-primary" />
-                <span className="text-[10px] font-mono font-bold">{user.email}</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
+                <UserIcon size={14} className="text-blue-500" />
+                <span className="text-[11px] font-bold text-slate-600">{user.email}</span>
               </div>
-              <button 
-                onClick={signOut}
-                className="p-2 text-tactical-text/40 hover:text-secondary transition-colors"
-                title="로그아웃"
-              >
+              <button onClick={signOut} className="p-2 text-slate-400 hover:text-rose-500 transition-colors">
                 <LogOut size={18} />
               </button>
             </div>
           ) : (
-            <button 
-              onClick={signInWithGoogle}
-              className="glow-btn-primary text-[10px] py-1 px-4"
-            >
-              구글 계정 연결
+            <button onClick={signInWithGoogle} className="glow-btn-primary text-[11px] py-1.5 px-6">
+              Google 로그인
             </button>
           )}
         </div>
       </header>
 
-      {/* 메인 컨테이너 */}
+      {/* 메인 영역 */}
       <main className="flex-1 flex overflow-hidden">
-        {/* 좌측: 캘린더/할 일 영역 */}
-        <aside className="w-[400px] border-r border-tactical-border bg-tactical-bg/30 relative z-40">
-          <CalendarArea 
-            tasks={tasks}
-            onAddTask={handleAddTask}
-            onRemoveTask={handleRemoveTask}
-            totalAvailableMinutes={TOTAL_AVAILABLE_MINUTES}
+        {/* 좌측: 일정 관리 (달력) */}
+        <aside className="w-[450px] border-r border-slate-200 bg-white relative z-40">
+          <ScheduleArea 
+            schedules={schedules}
+            onAddSchedule={handleAddSchedule}
+            onRemoveSchedule={handleRemoveSchedule}
           />
         </aside>
 
-        {/* 우측: 전장 영역 */}
-        <section className="flex-1 bg-background relative">
+        {/* 우측: 전장 또는 전투 화면 */}
+        <section className="flex-1 bg-slate-50 relative">
           {gameState === '전투중' ? (
-            <div className="h-full w-full flex flex-col items-center justify-center bg-secondary/5 animate-pulse">
-              <Zap size={64} className="text-secondary mb-4 drop-shadow-[0_0_15px_rgba(255,0,212,0.8)]" />
-              <h2 className="text-4xl font-black text-secondary italic tracking-tighter uppercase">교전 중...</h2>
-              <p className="text-tactical-text/60 font-mono mt-2">대상 제거 및 데이터 동기화 중</p>
+            <div className="h-full w-full flex flex-col items-center justify-center bg-white">
+              <div className="absolute top-12 flex flex-col items-center">
+                <Zap size={64} className="text-rose-500 mb-4 animate-bounce" />
+                <h2 className="text-5xl font-black text-slate-900 italic tracking-tighter uppercase mb-2">교전 진행 중</h2>
+                <div className="flex items-center gap-3 px-6 py-2 bg-rose-50 border border-rose-100 rounded-full">
+                  <span className="w-2 h-2 bg-rose-500 rounded-full animate-ping" />
+                  <span className="text-2xl font-mono font-black text-rose-600">
+                    {Math.floor(battleTime / 60).toString().padStart(2, '0')}:
+                    {(battleTime % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-20 items-center mb-20">
+                <div className="flex flex-col items-center gap-4">
+                  <span className="text-sm font-bold text-blue-500 uppercase tracking-widest">투입된 아군</span>
+                  <div className="text-6xl font-black text-slate-900">{selectedSoldierCount}</div>
+                </div>
+                <div className="text-4xl font-black text-slate-200 italic">VS</div>
+                <div className="flex flex-col items-center gap-4">
+                  <span className="text-sm font-bold text-rose-500 uppercase tracking-widest">목표 위협</span>
+                  <div className="text-6xl font-black text-slate-900">1</div>
+                </div>
+              </div>
+
+              <button 
+                onClick={handleCompleteBattle}
+                className="flex items-center gap-3 px-12 py-5 bg-emerald-500 hover:bg-emerald-600 text-white text-2xl font-black rounded-2xl shadow-xl shadow-emerald-200 transition-all active:scale-95 group"
+              >
+                <CheckCircle size={32} className="group-hover:rotate-12 transition-transform" />
+                전투 완료
+              </button>
+              
+              <p className="mt-8 text-slate-400 font-medium animate-pulse">임무가 완료되면 위 버튼을 누르십시오</p>
             </div>
           ) : (
             <Battlefield 
-              soldierCount={currentSoldierCount}
+              soldierCount={soldierCount}
               enemyCount={enemyCount}
               onStartBattle={handleStartBattle}
             />
           )}
         </section>
       </main>
-
-      {/* 시각적 오버레이 */}
-      <div className="fixed inset-0 pointer-events-none border-[20px] border-primary/5 z-[100] mix-blend-overlay" />
     </div>
   );
 }

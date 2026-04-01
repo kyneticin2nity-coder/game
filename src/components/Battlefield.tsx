@@ -20,50 +20,45 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ soldierCount, enemyCou
   const handleEnemyClick = () => {
     if (selectedSoldiers.length > 0 && enemyCount > 0) {
       onStartBattle(selectedSoldiers);
-      setSelectedSoldiers([]); // 전투 시작 후 선택 초기화
+      setSelectedSoldiers([]);
     }
   };
 
   return (
-    <div className="relative h-full w-full flex flex-col p-8 overflow-hidden bg-background">
-      {/* 배경 그리드 패턴 */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none" 
-        style={{ backgroundImage: 'radial-gradient(#3a3a45 1px, transparent 1px)', backgroundSize: '24px 24px' }} 
+    <div className="relative h-full w-full flex flex-col p-10 overflow-hidden bg-[#f8fafc]">
+      {/* 배경 패턴 */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+        style={{ backgroundImage: 'radial-gradient(#000 1.5px, transparent 1.5px)', backgroundSize: '32px 32px' }} 
       />
 
-      <header className="relative z-10 flex justify-between items-start mb-12">
+      <header className="relative z-10 flex justify-between items-start mb-16">
         <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-primary">
-            <Shield size={24} className="drop-shadow-[0_0_8px_rgba(0,242,255,0.6)]" />
-            <h2 className="text-3xl font-black uppercase tracking-tighter italic">전방 방어선</h2>
+          <div className="flex items-center gap-3 text-slate-800">
+            <Shield size={28} className="text-blue-500" />
+            <h2 className="text-4xl font-black uppercase tracking-tighter italic">작전 구역</h2>
           </div>
-          <p className="text-[10px] font-mono text-tactical-text/40 tracking-[0.2em]">운영 상태: 활성 (ACTIVE)</p>
+          <p className="text-[11px] font-bold text-slate-400 tracking-[0.2em] ml-1">상태: 대기 중 (READY)</p>
         </div>
         
-        <div className="flex gap-8">
+        <div className="flex gap-10">
           <div className="text-right">
-            <span className="block text-[10px] font-bold text-primary uppercase tracking-widest mb-1">아군 유닛</span>
-            <span className="text-4xl font-black text-glow-primary font-mono">{soldierCount}</span>
+            <span className="block text-[11px] font-black text-blue-500 uppercase tracking-widest mb-1">대기 유닛</span>
+            <span className="text-5xl font-black text-slate-900 font-mono">{soldierCount}</span>
           </div>
           <div className="text-right">
-            <span className="block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">위협 수준</span>
-            <span className="text-4xl font-black text-glow-secondary font-mono">{enemyCount}</span>
+            <span className="block text-[11px] font-black text-rose-500 uppercase tracking-widest mb-1">위협 수준</span>
+            <span className="text-5xl font-black text-slate-900 font-mono">{enemyCount}</span>
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 flex-1 grid grid-cols-2 gap-8 items-center">
+      <main className="relative z-10 flex-1 grid grid-cols-2 gap-12 items-center">
         {/* 아군 구역 */}
-        <div className="h-full border-r border-tactical-border/50 pr-4 flex flex-wrap content-start gap-4">
-          <div className="w-full mb-2 flex justify-between items-center">
-            <span className="text-[10px] font-bold text-primary/60 uppercase tracking-widest flex items-center gap-2">
-              <Users size={12} /> 유닛을 선택하십시오
+        <div className="h-full border-r border-slate-200 pr-6 flex flex-wrap content-start gap-5">
+          <div className="w-full mb-3 flex justify-between items-center">
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Users size={14} className="text-blue-500" /> 출격할 유닛을 선택하십시오
             </span>
-            {selectedSoldiers.length > 0 && (
-              <span className="text-[10px] font-bold text-primary animate-pulse">
-                {selectedSoldiers.length}명 선택됨
-              </span>
-            )}
           </div>
           <AnimatePresence>
             {Array.from({ length: soldierCount }).map((_, i) => {
@@ -71,74 +66,77 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ soldierCount, enemyCou
               return (
                 <motion.div
                   key={`soldier-${i}`}
-                  initial={{ scale: 0, opacity: 0, y: 20 }}
+                  initial={{ scale: 0, opacity: 0 }}
                   animate={{ 
-                    scale: isSelected ? 1.1 : 1, 
-                    opacity: 1, 
-                    y: 0,
-                    boxShadow: isSelected ? '0 0 20px rgba(0, 242, 255, 0.8)' : '0 0 10px rgba(0, 242, 255, 0.2)'
+                    scale: isSelected ? 1.15 : 1, 
+                    opacity: 1,
+                    y: isSelected ? -5 : 0
                   }}
                   exit={{ scale: 0, opacity: 0 }}
                   onClick={() => toggleSoldierSelection(i)}
-                  className={`w-12 h-12 flex items-center justify-center rounded-sm cursor-pointer transition-colors ${
+                  className={`w-14 h-14 flex items-center justify-center rounded-2xl cursor-pointer shadow-sm transition-all duration-200 ${
                     isSelected 
-                      ? 'bg-primary/40 border-2 border-primary shadow-glow-primary' 
-                      : 'bg-primary/10 border border-primary/30 hover:bg-primary/20'
+                      ? 'bg-blue-500 text-white shadow-blue-200 shadow-xl ring-4 ring-blue-50' 
+                      : 'bg-white border border-slate-200 text-blue-500 hover:border-blue-300 hover:bg-blue-50'
                   }`}
                 >
-                  <Users size={20} className={isSelected ? 'text-white' : 'text-primary'} />
+                  <Users size={24} />
                 </motion.div>
               );
             })}
           </AnimatePresence>
           {soldierCount === 0 && (
-            <div className="w-full h-full flex flex-col items-center justify-center text-tactical-text/20 text-xs font-bold uppercase tracking-widest text-center italic">
-              지원 병력 대기 중...<br/>여유 시간을 확보하십시오.
+            <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 text-sm font-black uppercase tracking-widest text-center italic">
+              예비 유닛이 부족합니다<br/>일정에서 여유 시간을 확보하십시오
             </div>
           )}
         </div>
 
         {/* 적군 구역 */}
         <div 
-          className={`h-full pl-4 flex flex-wrap content-start gap-4 transition-all duration-300 rounded-lg ${
-            selectedSoldiers.length > 0 ? 'bg-secondary/5 cursor-crosshair ring-1 ring-secondary/20' : ''
+          className={`h-full pl-6 flex flex-wrap content-start gap-5 transition-all duration-500 rounded-3xl ${
+            selectedSoldiers.length > 0 
+              ? 'bg-rose-50/50 cursor-crosshair ring-2 ring-rose-100 ring-dashed' 
+              : ''
           }`}
           onClick={handleEnemyClick}
         >
-          <div className="w-full mb-2">
-            <span className="text-[10px] font-bold text-secondary/60 uppercase tracking-widest flex items-center gap-2">
-              <Target size={12} /> {selectedSoldiers.length > 0 ? '대상을 클릭하여 공격' : '감지된 위협'}
+          <div className="w-full mb-3">
+            <span className={`text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors ${
+              selectedSoldiers.length > 0 ? 'text-rose-500 animate-pulse' : 'text-slate-400'
+            }`}>
+              <Target size={14} /> {selectedSoldiers.length > 0 ? '위협 대상을 클릭하여 교전 시작' : '감지된 위협'}
             </span>
           </div>
           <AnimatePresence>
             {Array.from({ length: enemyCount }).map((_, i) => (
               <motion.div
                 key={`enemy-${i}`}
-                initial={{ scale: 0, opacity: 0, x: 20 }}
-                animate={{ scale: 1, opacity: 1, x: 0 }}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0, opacity: 0 }}
                 whileHover={{ scale: 1.1, rotate: 5 }}
-                className="w-12 h-12 bg-secondary/20 border border-secondary/50 flex items-center justify-center rounded-sm shadow-glow-secondary"
+                className="w-14 h-14 bg-white border border-rose-100 flex items-center justify-center rounded-2xl shadow-sm text-rose-500"
               >
-                <Target size={20} className="text-secondary" />
+                <Target size={24} />
               </motion.div>
             ))}
           </AnimatePresence>
           {enemyCount === 0 && (
-            <div className="w-full h-full flex flex-col items-center justify-center text-tactical-text/20 text-xs font-bold uppercase tracking-widest text-center italic">
-              구역 확보 완료.<br/>위협이 감지되지 않았습니다.
+            <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 text-sm font-black uppercase tracking-widest text-center italic">
+              감지된 위협이 없습니다<br/>평화로운 구역입니다
             </div>
           )}
         </div>
       </main>
 
-      <footer className="relative z-10 mt-8 pt-6 border-t border-tactical-border/50 flex justify-center">
-        <div className="flex items-center gap-12 text-tactical-text/40 font-mono text-[10px] tracking-widest">
-          <div className="flex items-center gap-2">
-            <Sword size={12} /> {selectedSoldiers.length > 0 ? '교전 준비 완료' : '대기 모드'}
+      <footer className="relative z-10 mt-10 pt-8 border-t border-slate-200 flex justify-center">
+        <div className="flex items-center gap-16 text-slate-400 font-bold text-[11px] tracking-widest uppercase">
+          <div className={`flex items-center gap-2 transition-colors ${selectedSoldiers.length > 0 ? 'text-blue-500' : ''}`}>
+            <Sword size={14} /> {selectedSoldiers.length > 0 ? `${selectedSoldiers.length} 유닛 준비 완료` : '전술 대기 중'}
           </div>
-          <div className="w-1 h-1 bg-tactical-border rounded-full" />
-          <div>GRID_COORDS: 37.5665, 126.9780</div>
+          <div className="w-1.5 h-1.5 bg-slate-200 rounded-full" />
+          <div>좌표: 37.5665, 126.9780</div>
         </div>
       </footer>
     </div>
