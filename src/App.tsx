@@ -167,18 +167,21 @@ function AppContent() {
                     <div className="flex items-center gap-3 px-6 py-2 bg-rose-50 border border-rose-100 rounded-full">
                       <span className="w-2 h-2 bg-rose-500 rounded-full animate-ping" />
                       <span className="text-2xl font-mono font-black text-rose-600">
-                        {Math.floor(battleTime / 60).toString().padStart(2, '0')}:
-                        {(battleTime % 60).toString().padStart(2, '0')}
+                        {Math.floor(battleTime / 3600).toString().padStart(2, '0')}:
+                        {Math.floor((battleTime % 3600) / 60).toString().padStart(2, '0')}
                       </span>
-                    </div>
-                  </div>
+                    </div>                  </div>
 
                   <div className="flex gap-20 items-center mb-20">
                     <div className="flex flex-col items-center gap-4">
                       <span className="text-sm font-bold text-blue-500 uppercase tracking-widest">투입된 아군</span>
-                      <div className="text-6xl font-black text-slate-900">{selectedSoldierCount}</div>
-                    </div>
-                    <div className="text-4xl font-black text-slate-200 italic">VS</div>
+                      <div className="flex items-center gap-6">
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden border-4 border-blue-100 shadow-lg shadow-blue-100/50">
+                          <img src="/game/soldier.png" alt="soldier" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="text-7xl font-black text-slate-900 leading-none">{selectedSoldierCount}</div>
+                      </div>
+                    </div>                    <div className="text-4xl font-black text-slate-200 italic">VS</div>
                     <div className="flex flex-col items-center gap-4">
                       <span className="text-sm font-bold text-rose-500 uppercase tracking-widest">목표 위협</span>
                       <div className="text-6xl font-black text-slate-900">1</div>

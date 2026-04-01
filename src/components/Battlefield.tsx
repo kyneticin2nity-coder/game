@@ -74,13 +74,13 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ soldierCount, enemyCou
                   }}
                   exit={{ scale: 0, opacity: 0 }}
                   onClick={() => toggleSoldierSelection(i)}
-                  className={`w-14 h-14 flex items-center justify-center rounded-2xl cursor-pointer shadow-sm transition-all duration-200 ${
+                  className={`w-14 h-14 flex items-center justify-center rounded-2xl cursor-pointer shadow-sm transition-all duration-200 overflow-hidden ${
                     isSelected 
                       ? 'bg-blue-500 text-white shadow-blue-200 shadow-xl ring-4 ring-blue-50' 
                       : 'bg-white border border-slate-200 text-blue-500 hover:border-blue-300 hover:bg-blue-50'
                   }`}
                 >
-                  <Users size={24} />
+                  <img src="/game/soldier.png" alt="soldier" className="w-full h-full object-cover" />
                 </motion.div>
               );
             })}

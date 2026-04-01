@@ -20,6 +20,13 @@ export const ScheduleArea: React.FC<ScheduleAreaProps> = ({
   const [end, setEnd] = useState('10:00');
   const [type, setType] = useState<ScheduleType>('normal');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag to create state
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartMin, setDragStartMin] = useState<number | null>(null);
+  const [dragCurrentMin, setDragCurrentMin] = useState<number | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +41,12 @@ export const ScheduleArea: React.FC<ScheduleAreaProps> = ({
   const timeToMinutes = (time: string) => {
     const [h, m] = time.split(':').map(Number);
     return h * 60 + m;
+  };
+
+  const minutesToTime = (totalMinutes: number) => {
+    const h = Math.floor(totalMinutes / 60);
+    const m = Math.floor(totalMinutes % 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
   };
 
   const getPosition = (time: string) => {
@@ -55,6 +68,52 @@ export const ScheduleArea: React.FC<ScheduleAreaProps> = ({
     }
   };
 
+  // Drag handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!gridRef.current) return;
+    const rect = gridRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const totalMinutes = (y / hourHeight) * 60;
+    // Snap to 15 minutes
+    const snappedMinutes = Math.round(totalMinutes / 15) * 15;
+    
+    setIsDragging(true);
+    setDragStartMin(snappedMinutes);
+    setDragCurrentMin(snappedMinutes + 30); // Default 30 min duration
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !gridRef.current) return;
+    const rect = gridRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const totalMinutes = (y / hourHeight) * 60;
+    const snappedMinutes = Math.round(totalMinutes / 15) * 15;
+    
+    setDragCurrentMin(snappedMinutes);
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging || dragStartMin === null || dragCurrentMin === null) {
+      setIsDragging(false);
+      return;
+    }
+
+    const min = Math.min(dragStartMin, dragCurrentMin);
+    const max = Math.max(dragStartMin, dragCurrentMin);
+    
+    // Ensure at least 15 minutes
+    const finalMax = max === min ? min + 15 : max;
+
+    setStart(minutesToTime(min));
+    setEnd(minutesToTime(finalMax));
+    setIsDragging(false);
+    setDragStartMin(null);
+    setDragCurrentMin(null);
+
+    // Focus title input to encourage naming the new schedule
+    titleInputRef.current?.focus();
+  };
+
   // Scroll to 08:00 on mount
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -63,7 +122,7 @@ export const ScheduleArea: React.FC<ScheduleAreaProps> = ({
   }, []);
 
   return (
-    <div className="flex h-screen w-full bg-white overflow-hidden font-sans">
+    <div className="flex h-screen w-full bg-white overflow-hidden font-sans select-none">
       {/* Left Sidebar - Form & List */}
       <aside className="w-80 border-r border-slate-100 flex flex-col bg-slate-50/30">
         <div className="p-6 border-b border-slate-100 bg-white">
@@ -87,6 +146,7 @@ export const ScheduleArea: React.FC<ScheduleAreaProps> = ({
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">일정 명칭</label>
               <input 
+                ref={titleInputRef}
                 type="text" 
                 placeholder="일정을 입력하세요" 
                 className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all shadow-sm"
@@ -216,17 +276,39 @@ export const ScheduleArea: React.FC<ScheduleAreaProps> = ({
           </div>
 
           {/* Grid Content */}
-          <div className="ml-20 relative h-[1920px] mr-8"> {/* 24 * 80 = 1920 */}
+          <div 
+            ref={gridRef}
+            className="ml-20 relative h-[1920px] mr-8 cursor-crosshair"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={() => isDragging && handleMouseUp()}
+          > 
             {/* Grid Lines */}
             {hours.map(hour => (
               <div 
                 key={hour} 
-                className="absolute w-full border-t border-slate-50"
+                className="absolute w-full border-t border-slate-50 pointer-events-none"
                 style={{ top: `${hour * hourHeight}px` }}
               />
             ))}
 
-            {/* Current Time Indicator (Static for demo or dynamic) */}
+            {/* Ghost / Drag Selection */}
+            {isDragging && dragStartMin !== null && dragCurrentMin !== null && (
+              <div 
+                className="absolute left-4 right-4 bg-blue-500/10 border-2 border-blue-500/30 rounded-xl z-30 pointer-events-none"
+                style={{
+                  top: `${(Math.min(dragStartMin, dragCurrentMin) / 60) * hourHeight}px`,
+                  height: `${(Math.abs(dragCurrentMin - dragStartMin) / 60) * hourHeight || (15 / 60) * hourHeight}px`
+                }}
+              >
+                <div className="absolute top-2 left-3 text-[10px] font-bold text-blue-600 bg-white/80 px-1.5 py-0.5 rounded shadow-sm">
+                  {minutesToTime(Math.min(dragStartMin, dragCurrentMin))} - {minutesToTime(Math.max(dragStartMin, dragCurrentMin) || Math.min(dragStartMin, dragCurrentMin) + 15)}
+                </div>
+              </div>
+            )}
+
+            {/* Current Time Indicator */}
             <div 
               className="absolute w-full flex items-center z-20 pointer-events-none"
               style={{ top: `${(new Date().getHours() + new Date().getMinutes() / 60) * hourHeight}px` }}
@@ -242,8 +324,9 @@ export const ScheduleArea: React.FC<ScheduleAreaProps> = ({
               return (
                 <div
                   key={s.id}
-                  className={`absolute left-4 right-4 rounded-xl border-l-4 p-3 flex flex-col shadow-sm transition-all hover:shadow-md hover:scale-[1.01] overflow-hidden ${getTypeColor(s.type)}`}
+                  className={`absolute left-4 right-4 rounded-xl border-l-4 p-3 flex flex-col shadow-sm transition-all hover:shadow-md hover:scale-[1.01] overflow-hidden z-20 ${getTypeColor(s.type)}`}
                   style={{ top: `${top}px`, height: `${height}px`, minHeight: '30px' }}
+                  onMouseDown={(e) => e.stopPropagation()} // Prevent drag when clicking on existing schedule
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex flex-col">
