@@ -80,7 +80,7 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ soldierCount, enemyCou
                       : 'bg-white border border-slate-200 text-blue-500 hover:border-blue-300 hover:bg-blue-50'
                   }`}
                 >
-                  <img src="/game/soldier.png" alt="soldier" className="w-full h-full object-cover" />
+                  <img src="/soldier.png" alt="soldier" className="w-full h-full object-cover" />
                 </motion.div>
               );
             })}

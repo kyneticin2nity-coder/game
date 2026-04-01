@@ -177,9 +177,8 @@ function AppContent() {
                       <span className="text-sm font-bold text-blue-500 uppercase tracking-widest">투입된 아군</span>
                       <div className="flex items-center gap-6">
                         <div className="w-20 h-20 rounded-2xl overflow-hidden border-4 border-blue-100 shadow-lg shadow-blue-100/50">
-                          <img src="/game/soldier.png" alt="soldier" className="w-full h-full object-cover" />
-                        </div>
-                        <div className="text-7xl font-black text-slate-900 leading-none">{selectedSoldierCount}</div>
+                          <img src="/soldier.png" alt="soldier" className="w-full h-full object-cover" />
+                        </div>                        <div className="text-7xl font-black text-slate-900 leading-none">{selectedSoldierCount}</div>
                       </div>
                     </div>                    <div className="text-4xl font-black text-slate-200 italic">VS</div>
                     <div className="flex flex-col items-center gap-4">
